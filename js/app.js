@@ -40,27 +40,55 @@
     return screenDetails;
   }
   loadScreenDetails(false); // se il permesso c'è già, prepara gli schermi senza chiedere nulla
-  const otherScreen = (sd) => sd && (sd.screens.find((x) => x !== sd.currentScreen && !x.isPrimary) || sd.screens.find((x) => x !== sd.currentScreen));
+  /* Lo schermo «altro» = quello che non contiene la finestra della regia (confronto per posizione, non per oggetto) */
+  function otherScreen(sd) {
+    if (!sd || !sd.screens || sd.screens.length < 2) return null;
+    const cx = window.screenX + window.outerWidth / 2, cy = window.screenY + window.outerHeight / 2;
+    const contains = (x) => cx >= x.left && cx < x.left + x.width && cy >= x.top && cy < x.top + x.height;
+    const here = sd.screens.find(contains) || sd.currentScreen;
+    const same = (x) => here && x.left === here.left && x.top === here.top && x.width === here.width && x.height === here.height;
+    const others = sd.screens.filter((x) => !same(x));
+    return others.find((x) => !x.isPrimary) || others[0] || null;
+  }
 
   async function openLim() {
     const extended = hasSecondScreen();
     let sd = screenDetails;
-    if (extended && !sd) sd = await loadScreenDetails(true); // la prima volta il browser chiede il permesso
-    const other = extended ? otherScreen(sd) : null;
-    let url = 'lim.html';
-    let features = 'popup=yes,width=1280,height=800';
-    if (other) {
-      // «Proietta»: finestra a tutto schermo sullo schermo dove non c'è la regia
-      url = 'lim.html?fs=1';
-      features = `popup=yes,fullscreen=yes,left=${other.left},top=${other.top},width=${other.width},height=${other.height}`;
-      if (limWin && !limWin.closed) limWin.close();
+    if (extended && !sd) {
+      // la prima volta il browser chiede il permesso «gestione delle finestre»: il clic viene «consumato»,
+      // quindi non apriamo la LIM sullo schermo sbagliato ma chiediamo di premere di nuovo
+      sd = await loadScreenDetails(true);
+      if (!sd) {
+        Q.toast('Per proiettare sull’altro schermo consenti a Chrome di «gestire le finestre su tutti gli schermi» (icona nella barra dell’indirizzo), poi premi di nuovo «Proietta».', 'error');
+        return;
+      }
+      Q.toast('Permesso concesso: premi di nuovo «Proietta»', 'ok');
+      return;
     }
-    limWin = window.open(url, 'quizlim-schermo', features);
+    const other = extended ? otherScreen(sd) : null;
+    if (extended && !other) { Q.toast('Non trovo il secondo schermo: controlla che sia esteso (non duplicato) nelle impostazioni Schermi del Mac.', 'error'); return; }
+
+    // chiudi le finestre LIM aperte prima (anche quelle di cui la regia ha perso il riferimento)
+    Q.sync.send('close-lim');
+    if (limWin && !limWin.closed) limWin.close();
+
+    let url = 'lim.html', name = 'quizlim-' + Date.now(), features = 'popup=yes,width=1280,height=800';
+    if (other) {
+      url = 'lim.html?fs=1';
+      features = `popup=yes,fullscreen=yes,left=${other.availLeft},top=${other.availTop},width=${other.availWidth},height=${other.availHeight}`;
+    }
+    limWin = window.open(url, name, features);
     if (!limWin) { Q.toast('Il browser ha bloccato la finestra: consenti i popup per questa pagina e premi di nuovo', 'error'); return; }
     Q.sync.setPeer(limWin);
-    if (other) Q.toast('Proiezione sul secondo schermo avviata', 'ok');
-    else if (extended && !other) Q.toast('Consenti al browser di gestire le finestre sugli schermi, poi premi di nuovo «Proietta»', 'info');
-    else Q.toast('Schermo aperto in una finestra: collega la LIM per proiettarlo a schermo intero', 'info');
+    if (other) {
+      // se il browser l'ha aperta comunque qui, spostala sull'altro schermo
+      const place = () => { try { limWin.moveTo(other.availLeft, other.availTop); limWin.resizeTo(other.availWidth, other.availHeight); } catch (e) { /* ignora */ } };
+      place();
+      setTimeout(place, 300);
+      Q.toast('Proiezione su ' + (other.label || 'secondo schermo'), 'ok');
+    } else {
+      Q.toast('Schermo aperto in una finestra: collega la LIM come secondo schermo per proiettarlo a schermo intero', 'info');
+    }
   }
   document.getElementById('btn-open-lim').addEventListener('click', openLim);
 

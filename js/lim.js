@@ -42,6 +42,7 @@
       if (!sess || sess.id !== st.id) { sync.send('hello'); return; }
       render();
     } else if (m.t === 'idle') { sess = null; st = null; render(); }
+    else if (m.t === 'close-lim' && window.opener && !joinMode) window.close(); // la regia sta riaprendo la LIM altrove
   }
 
   const nameOf = (id) => ((st.participants || []).find((p) => p.id === id) || {}).name || '';
