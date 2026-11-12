@@ -3,6 +3,8 @@
 Quiz interattivi in classe: la **regia** sul computer del docente, lo **schermo** sulla LIM.
 Nessuna installazione, nessun account, funziona anche senza internet.
 
+**Online:** https://christiangentilini.github.io/quiz-lim/ (LIM: `/live`, telecomando: `/remote`)
+
 ## Avvio
 
 Apri `index.html` in Chrome o Edge (doppio clic), oppure da terminale nella cartella:
