@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>Quiz LIM</title>
+  <script>
+    /* Link diretti con il codice del quiz (siti statici come GitHub Pages servono questa pagina per gli indirizzi sconosciuti):
+       /CODICE          → regia della sessione
+       /CODICE/live     → proiezione LIM
+       /CODICE/remote   → telecomando */
+    (function () {
+      var p = location.pathname;
+      var m = p.match(/^(.*\/)([A-Za-z0-9]{6})\/(live|remote)\/?$/i) || p.match(/^(.*\/)([A-Za-z0-9]{6})\/?$/);
+      if (!m || /^(remote|live)$/i.test(m[2])) return;
+      var base = m[1], code = m[2].toUpperCase(), kind = (m[3] || '').toLowerCase();
+      var target = kind === 'live' ? 'lim.html?join=1&code=' + code
+        : kind === 'remote' ? 'remote.html?code=' + code
+        : 'index.html?s=' + code;
+      location.replace(base + target);
+    })();
+  </script>
+  <style>body{font:16px system-ui,sans-serif;display:grid;place-items:center;min-height:90vh;color:#334155;text-align:center}a{color:#4f46e5}</style>
+</head>
+<body>
+  <div>
+    <h1>Pagina non trovata</h1>
+    <p>Controlla il link oppure entra con il codice: <a href="live">LIM</a> · <a href="remote">Telecomando</a></p>
+  </div>
+</body>
+</html>

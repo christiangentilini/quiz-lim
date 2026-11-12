@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Quiz LIM — Schermo</title>
+  <link rel="stylesheet" href="css/widgets.css">
+  <link rel="stylesheet" href="css/lim.css">
+</head>
+<body>
+  <div id="app">
+    <header id="hdr" class="hidden">
+      <div class="h-left"><span id="h-title"></span><span id="h-count"></span></div>
+      <div id="h-who" class="who"></div>
+      <div id="h-timer" class="timer hidden">
+        <svg viewBox="0 0 100 100"><circle class="tbg" cx="50" cy="50" r="44"/><circle class="tfg" cx="50" cy="50" r="44"/></svg>
+        <span></span>
+      </div>
+    </header>
+    <main id="stage" class="stage"></main>
+    <div id="result" class="result hidden"></div>
+  </div>
+  <div id="overlay" class="overlay hidden"></div>
+  <button id="next" class="next-btn hidden" type="button"></button>
+  <button id="fs" class="fs-btn" type="button">⛶ Schermo intero</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/sync.js"></script>
+  <script src="js/net.js"></script>
+  <script src="js/widgets.js"></script>
+  <script src="js/lim.js"></script>
+</body>
+</html>
