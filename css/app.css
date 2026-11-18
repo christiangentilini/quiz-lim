@@ -429,3 +429,13 @@ body.fit-screen .reveal-bar { margin-bottom: 0; }
 .code-chip { padding: 2px 9px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-weight: 800; font-size: .85rem; }
 .session-card h3 { margin: 4px 0 2px; }
 .live-title .code-pill { padding: 4px 10px; font-size: .8rem; }
+
+/* Editor: esercizio di calcolo */
+.mode-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mode-opt { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 2px solid var(--line); border-radius: 10px; cursor: pointer; }
+.mode-opt input { display: none; }
+.mode-opt.on { border-color: var(--accent); background: var(--accent-soft); }
+.step-edit { display: flex; flex-direction: column; gap: 6px; }
+.step-row { display: grid; grid-template-columns: 24px minmax(0, 2.2fr) minmax(0, 1.1fr) minmax(0, .9fr) 30px; gap: 6px; align-items: center; }
+.step-row.head { font-weight: 700; }
+.step-row .letter { text-align: center; font-weight: 800; color: var(--muted); }

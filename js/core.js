@@ -148,8 +148,9 @@ window.Q = window.Q || {};
     cloze: 'Completamento',
     dropdown: 'Scelta da tendina',
     match: 'Collegamento',
+    calc: 'Esercizio di calcolo',
   };
-  Q.TYPE_ICONS = { multiple: '☑', tf: '⚖', open: '💬', cloze: '✎', dropdown: '▾', match: '⇄' };
+  Q.TYPE_ICONS = { multiple: '☑', tf: '⚖', open: '💬', cloze: '✎', dropdown: '▾', match: '⇄', calc: '🧮' };
 
   Q.newQuestion = function (type) {
     const base = { id: Q.uid(), type, text: '', image: null, time: null };
@@ -161,6 +162,7 @@ window.Q = window.Q || {};
       case 'cloze': return { ...base, bank: true, distractors: '' };
       case 'dropdown': return { ...base };
       case 'match': return { ...base, pairs: [{ left: '', right: '' }, { left: '', right: '' }, { left: '', right: '' }] };
+      case 'calc': return { ...base, board: false, grid: true, stepPoints: 1, tolerance: 0.5, steps: [{ label: '', value: '', unit: '' }, { label: '', value: '', unit: '' }, { label: '', value: '', unit: '' }] };
     }
     return base;
   };
@@ -200,6 +202,10 @@ window.Q = window.Q || {};
         else if (b.some((x) => x.alts.length < 2)) w.push('Ogni tendina richiede almeno 2 opzioni separate da |');
         break;
       }
+      case 'calc':
+        if (!(q.steps || []).some((x) => String(x.label || '').trim())) w.push('Aggiungi almeno un passaggio');
+        else if (!q.board && (q.steps || []).some((x) => String(x.label || '').trim() && Q.parseNum(x.value) == null)) w.push('Ogni passaggio richiede un risultato numerico');
+        break;
       case 'match':
         if ((q.pairs || []).filter((p) => String(p.left || '').trim() && String(p.right || '').trim()).length < 2) w.push('Servono almeno 2 coppie complete');
         break;
@@ -215,6 +221,7 @@ window.Q = window.Q || {};
       case 'cloze': return Q.blanksOf(q.text).map((b, i) => `${i + 1}) ${b.alts.join(' / ')}`).join('\n');
       case 'dropdown': return Q.blanksOf(q.text).map((b, i) => `${i + 1}) ${b.alts[0] || ''}`).join('\n');
       case 'match': return (q.pairs || []).map((p) => `${p.left} → ${p.right}`).join('\n');
+      case 'calc': return (q.steps || []).map((x, i) => `${i + 1}) ${x.label}: ${x.value} ${x.unit || ''}`.trim()).join('\n');
     }
     return '';
   };
@@ -226,6 +233,7 @@ window.Q = window.Q || {};
       case 'cloze':
       case 'dropdown': return Q.blanksOf(q.text).map((_, i) => (a && a[i]) || '_').join(' | ');
       case 'match': return Object.entries(a || {}).map(([l, r]) => `${(q.pairs[l] || {}).left} → ${(q.pairs[r] || {}).right}`).join(' | ');
+      case 'calc': return (q.steps || []).map((x, i) => (a && a[i]) || '_').join(' | ');
     }
     return '';
   };
@@ -235,6 +243,23 @@ window.Q = window.Q || {};
     wrong: { label: 'Errata', icon: '✘' },
     blank: { label: 'Non risposta', icon: '—' },
     pending: { label: 'Da valutare', icon: '?' },
+  };
+
+  /* ---------- Numeri scritti all'italiana: 13.230.000 · 26,46 · 1 000 · 26.46 ---------- */
+  Q.parseNum = function (v) {
+    let t = String(v ?? '').trim().replace(/\s/g, '').replace(/[^\d.,\-+eE]/g, '');
+    if (!t || !/\d/.test(t)) return null;
+    if (t.includes('.') && t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+    else if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+    else if (/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+    const n = Number(t);
+    return Number.isFinite(n) ? n : null;
+  };
+  /* uguale entro la tolleranza (percentuale) */
+  Q.numClose = (a, b, tolPct) => {
+    if (a == null || b == null) return false;
+    if (b === 0) return Math.abs(a) < 1e-9;
+    return Math.abs(a - b) <= Math.abs(b) * (Number(tolPct) || 0) / 100 + 1e-9;
   };
 
   /* ---------- Codice del quiz e link ---------- */

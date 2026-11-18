@@ -165,7 +165,7 @@
     $('#h-count').textContent = `Domanda ${pos + 1} di ${sess.order.length}`;
     renderWho(r);
     if (!qroot) { qroot = h('div', { class: 'qroot' }); stage.append(qroot); }
-    const key = pos + '|' + (r.revealed ? 1 : 0) + '|' + (r.status || '') + '|' + (r.explained ? 1 : 0) + '|' + (r.confirmed ? 1 : 0);
+    const key = pos + '|' + (r.revealed ? 1 : 0) + '|' + (r.status || '') + '|' + (r.explained ? 1 : 0) + '|' + (r.confirmed ? 1 : 0) + '|' + (r.steps ? r.steps.map(Number).join('') : '');
     if (key !== qKey || (r.rev !== qRev && r.from !== sync.id)) {
       if (r.revealed && key !== qKey) localAnswer = r.answer;
       qKey = key;
@@ -183,6 +183,7 @@
       answer: localAnswer,
       reveal: !!r.revealed,
       explain: !!r.revealed,
+      stepMarks: r.revealed && r.steps ? r.steps : null,
       confirmed: !!r.confirmed,
       onConfirm: (a) => {
         if (a !== undefined) localAnswer = a;
@@ -221,6 +222,10 @@
     }[r.status];
     const scoring = st.mode !== 'guided' && st.settings.scoring.enabled;
     const pts = scoring && r.status !== 'pending' && r.points ? Q.fmtPts(r.points) + ' pt' : '';
+    // esercizio di calcolo con alcuni passaggi giusti: esito «parziale»
+    const steps = r.steps || [];
+    const partial = r.status === 'wrong' && steps.length && steps.some(Boolean);
+    if (partial) S[0] = 'partial', S[1] = `◐ ${steps.filter(Boolean).length} su ${steps.length} passaggi`;
     Q.clear(result).append(h('span', null, S[1]));
     if (pts) result.append(h('span', { class: 'pts' }, pts));
     const key = pos + ':' + r.status + ':' + r.points;
@@ -232,7 +237,7 @@
       if (r.status === 'correct') Q.sound('correct');
       else if (r.status === 'wrong' || (r.status === 'blank' && r.timedOut)) Q.sound(r.timedOut ? 'timeout' : 'wrong');
       const big = fresh && ['correct', 'wrong', 'blank'].includes(r.status);
-      if (big) splash(r.status, r.timedOut);
+      if (big) splash(partial ? 'partial' : r.status, r.timedOut, partial ? S[1].slice(2) : null);
       result.style.animationDelay = big ? '.75s' : '0s';
       void result.offsetWidth;
       result.classList.add('pop');
@@ -240,8 +245,9 @@
   }
 
   /* Animazione d'esito: riempimento di colore a tutto schermo che poi svanisce */
-  function splash(status, timedOut) {
+  function splash(status, timedOut, text) {
     const conf = {
+      partial: ['partial', '◐', text || 'In parte corretto'],
       correct: ['ok', '✔', 'Corretto!'],
       wrong: ['ko', '✘', 'Sbagliato'],
       blank: ['blank', timedOut ? '⏱' : '—', timedOut ? 'Tempo scaduto' : 'Nessuna risposta'],

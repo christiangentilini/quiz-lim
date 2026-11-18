@@ -31,7 +31,8 @@ e vai su http://localhost:8765
 ## Tipi di domanda
 
 Scelta multipla (anche più risposte corrette) · Vero/falso · Aperta (valutazione manuale) ·
-Completamento `Il [[gatto]] dorme sul [[divano|sofà]]` · Tendina `[[corretta|errata|errata]]` · Collegamento.
+Completamento `Il [[gatto]] dorme sul [[divano|sofà]]` · Tendina `[[corretta|errata|errata]]` · Collegamento ·
+**Esercizio di calcolo** con passaggi richiesti: alla LIM (risultato di ogni passaggio con tastierino, correzione automatica con tolleranza) oppure solo testo alla lavagna (con quadretti; i passaggi li segni tu). Punti per passaggio.
 
 ## Scorciatoie in regia
 

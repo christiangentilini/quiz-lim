@@ -287,8 +287,8 @@ Q.Live = (function () {
       r.rev = (r.rev || 0) + 1;
       r.from = from || sync.id;
     }
-    if (curQ().type === 'open') {
-      // aperta: «Risposto» ferma il timer; la risposta attesa compare solo dopo l'esito del docente
+    if (curQ().type === 'open' || (curQ().type === 'calc' && curQ().board)) {
+      // aperta (o calcolo alla lavagna): «Risposto» ferma il timer; la risposta attesa compare solo dopo l'esito del docente
       Object.assign(r, { confirmed: true, status: 'pending', fraction: 0, points: 0 });
       stopTimer();
       commit();
@@ -297,7 +297,7 @@ Q.Live = (function () {
     reveal();
   }
   function resetResponse(r) {
-    Object.assign(r, { confirmed: false, revealed: false, explained: false, override: false, timedOut: false, status: null, fraction: 0, points: 0 });
+    Object.assign(r, { confirmed: false, revealed: false, explained: false, override: false, timedOut: false, status: null, fraction: 0, points: 0, steps: null, stepsSet: false });
   }
   function reopenAnswer() {
     resetResponse(cur());
@@ -308,12 +308,41 @@ Q.Live = (function () {
   }
   function reveal() {
     const r = cur();
-    const ev = Q.evaluate(curQ(), r.answer);
+    const q = curQ();
+    const ev = Q.evaluate(q, r.answer);
     r.revealed = true;
     r.confirmed = true;
-    if (!r.override) { r.status = ev.status; r.fraction = ev.fraction || 0; }
-    r.points = Q.pointsFor(r.status, r.fraction, s.settings.scoring);
+    if (q.type === 'calc') {
+      if (!r.stepsSet) r.steps = (ev.per || []).slice();
+      applySteps(r, q, ev.status);
+    } else {
+      if (!r.override) { r.status = ev.status; r.fraction = ev.fraction || 0; }
+      r.points = Q.pointsFor(r.status, r.fraction, s.settings.scoring);
+    }
     stopTimer();
+    commit();
+  }
+  /* Esercizio di calcolo: esito e punti dai passaggi corretti (punti per passaggio) */
+  function applySteps(r, q, autoStatus) {
+    const steps = q.steps || [];
+    const marks = (r.steps || []).slice(0, steps.length);
+    const n = marks.filter(Boolean).length;
+    if (n === steps.length && steps.length) r.status = 'correct';
+    else if (n > 0) r.status = 'wrong';
+    else if (q.board) r.status = r.stepsSet ? 'wrong' : 'pending';
+    else r.status = autoStatus === 'blank' ? 'blank' : 'wrong';
+    r.fraction = steps.length ? n / steps.length : 0;
+    const sc = s.settings.scoring;
+    r.points = !sc || !sc.enabled || r.status === 'pending' ? 0 : r.status === 'blank' ? (Number(sc.blank) || 0) : Q.round2(n * (q.stepPoints ?? 1));
+  }
+  function toggleStep(i) {
+    const r = cur(), q = curQ();
+    const steps = q.steps || [];
+    if (!r.steps) r.steps = steps.map(() => false);
+    r.steps[i] = !r.steps[i];
+    r.stepsSet = true;
+    r.override = true;
+    applySteps(r, q);
     commit();
   }
 
@@ -326,6 +355,7 @@ Q.Live = (function () {
   };
   /* dalla LIM niente finestre di conferma: alla fine si conclude direttamente */
   function nextFromLim() {
+    if (curQ().type === 'calc' && cur().confirmed && !cur().revealed) return reveal();
     if (curQ().type === 'open' && cur().confirmed && !cur().revealed) return;
     const step = stepPending();
     if (step === 'reveal') return confirmAnswer();
@@ -334,6 +364,7 @@ Q.Live = (function () {
   }
   function next() {
     const r = cur();
+    if (curQ().type === 'calc' && r.confirmed && !r.revealed) { reveal(); return; }
     if (curQ().type === 'open' && r.confirmed && !r.revealed) { Q.toast('Scegli prima l’esito: Corretta, Errata o Vuota', 'info'); return; }
     const step = stepPending();
     if (step === 'reveal') { confirmAnswer(); return; }
@@ -342,6 +373,19 @@ Q.Live = (function () {
   }
   function setStatus(status) {
     const r = cur();
+    if (curQ().type === 'calc') {
+      const q = curQ();
+      r.steps = (q.steps || []).map(() => status === 'correct');
+      r.stepsSet = true;
+      r.override = true;
+      r.confirmed = true;
+      r.revealed = true;
+      applySteps(r, q, status);
+      if (status === 'blank') { r.status = 'blank'; r.points = s.settings.scoring.enabled ? (Number(s.settings.scoring.blank) || 0) : 0; }
+      stopTimer();
+      commit();
+      return;
+    }
     r.status = status;
     r.override = true;
     r.fraction = status === 'correct' ? 1 : 0;
@@ -591,7 +635,7 @@ Q.Live = (function () {
     if (s.phase !== 'question') return;
     if (k === 'arrowright') next();
     else if (k === 'arrowleft') enterQuestion(s.idx - 1);
-    else if (k === 'enter') { if (cur().revealed) next(); else confirmAnswer(); }
+    else if (k === 'enter') { if (cur().revealed) next(); else if (cur().confirmed && curQ().type === 'calc') reveal(); else confirmAnswer(); }
     else if (k === 'c') { if (!cur().revealed) confirmAnswer(); }
     else if (k === 's' && s.participants.length) doDraw();
     else if (k === 't') { if (s.timer.duration > 0) { if (s.timer.running) pauseTimer(); else startTimer(); } }
@@ -855,6 +899,7 @@ Q.Live = (function () {
       answer: r.answer,
       reveal: !!r.revealed,
       explain: !!r.revealed,
+      stepMarks: r.revealed && r.steps ? r.steps : null,
       confirmed: !!r.confirmed,
       onConfirm: (a) => confirmAnswer(a, sync.id),
       onChange: (a, silent) => { setAnswer(a, sync.id, true); if (!silent) drawPreview(); },
@@ -913,6 +958,25 @@ Q.Live = (function () {
     const right = h('div', { class: 'rb-right' });
     const prevBtn = h('button', { class: 'btn big-ish', disabled: pos === 0, title: 'Domanda precedente (←)', onclick: () => enterQuestion(pos - 1) }, '← Precedente');
 
+    const q = curQ();
+    const scoring = s.mode !== 'guided' && s.settings.scoring.enabled;
+    if (q.type === 'calc') {
+      const marks = r.steps || [];
+      left.append(h('span', { class: 'bar-label' }, 'Passaggi'), ...(q.steps || []).map((x, i) => h('button', {
+        class: 'btn seg step-toggle ' + (marks[i] ? 'st-correct active' : r.stepsSet || r.revealed ? 'st-wrong' : ''),
+        title: x.label + ' = ' + x.value + (x.unit ? ' ' + x.unit : ''), onclick: () => toggleStep(i),
+      }, (i + 1) + ' ' + (marks[i] ? '✔' : '✘'))));
+      if (scoring) left.append(h('span', { class: 'chip' }, `${Q.fmtNum(r.points || 0)} pt`));
+      left.append(h('button', { class: 'btn ghost', title: 'Sblocca la risposta, annulla l’esito e fa ripartire il timer', onclick: reopenAnswer }, '↺ Riapri'));
+      if (!r.revealed) {
+        right.append(prevBtn, q.board || r.confirmed
+          ? h('button', { class: 'btn success big main-action', onclick: reveal }, '✔ Mostra correzione (Invio)')
+          : h('button', { class: 'btn success big main-action', onclick: () => confirmAnswer() }, '✔ Conferma e correggi (Invio)'));
+      } else {
+        right.append(prevBtn, h('button', { class: 'btn primary big main-action', onclick: next }, s.idx >= s.order.length - 1 ? 'Concludi quiz 🏁 (Invio)' : 'Successiva → (Invio)'));
+      }
+      return h('div', { class: 'reveal-bar' }, left, right);
+    }
     if (!r.revealed && !r.confirmed) {
       left.append(h('span', { class: 'bar-label' }, 'Esito diretto'),
         ...[['correct', '✔ Corretta'], ['wrong', '✘ Errata'], ['blank', '— Vuota']].map(([k, l]) => h('button', { class: 'btn seg st-' + k, title: Q.STATUS[k].label, onclick: () => setStatus(k) }, l)));
@@ -923,7 +987,6 @@ Q.Live = (function () {
       return h('div', { class: 'reveal-bar' }, left, right);
     }
 
-    const scoring = s.mode !== 'guided' && s.settings.scoring.enabled;
     const waitingGrade = isOpen && !r.revealed;
     left.append(h('span', { class: 'bar-label' }, 'Esito'),
       ...[['correct', '✔ Corretta'], ['wrong', '✘ Errata'], ['blank', '— Vuota']].map(([k, l]) => h('button', { class: 'btn seg st-' + k + (r.status === k ? ' active' : ''), onclick: () => setStatus(k) }, l)));

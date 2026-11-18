@@ -166,3 +166,9 @@ body {
 .join-msg.notfound, .join-msg.offline { color: var(--ko); }
 .shake { animation: shake .4s; }
 @keyframes shake { 25% { transform: translateX(-.3em); } 75% { transform: translateX(.3em); } }
+
+/* Calcolo alla lavagna: quadretti ampi sulla LIM */
+.qw-calc .calc-grid { min-height: 38vh; }
+.qw-calc .keypad { grid-template-columns: repeat(4, 3.6em); }
+.result.partial { background: #d97706; }
+.splash.partial { --c: #d97706; }
