@@ -11,7 +11,7 @@
     const q = Q.clone(q0);
     if (q.type === 'multiple') q.options = (q.options || []).filter((o) => String(o.text || '').trim());
     if (q.type === 'match') q.pairs = (q.pairs || []).filter((p) => String(p.left || '').trim() && String(p.right || '').trim());
-    if (q.type === 'calc') q.steps = (q.steps || []).filter((x) => String(x.label || '').trim());
+    if (q.type === 'calc') { q.steps = (q.steps || []).filter((x) => String(x.label || '').trim()); q.board = true; }
     return q;
   };
 
@@ -90,13 +90,7 @@
       }
     }
     if (q.type === 'calc') {
-      const steps = q.steps || [];
-      if (q.board) return { status: 'pending', fraction: 0, per: steps.map(() => false) };
-      const vals = Array.isArray(ans) ? ans : [];
-      if (!vals.some((v) => String(v || '').trim())) return { status: 'blank', fraction: 0, per: steps.map(() => false) };
-      const per = steps.map((x, i) => Q.numClose(Q.parseNum(vals[i]), Q.parseNum(x.value), q.tolerance ?? 0.5));
-      const n = per.filter(Boolean).length;
-      return { status: n === steps.length ? 'correct' : 'wrong', fraction: steps.length ? n / steps.length : 0, per };
+      return { status: 'pending', fraction: 0, per: (q.steps || []).map(() => false) };
     }
     return { status: 'pending', fraction: 0 };
   };
@@ -132,7 +126,7 @@
       root.append(h('div', { class: 'qw-confirm' }, h('button', {
         type: 'button', class: 'confirm-btn',
         onclick: () => ctx.onConfirm(ui.collect ? ui.collect() : undefined),
-      }, q.type === 'open' || (q.type === 'calc' && q.board) ? '✔ Svolto' : '✔ Conferma')));
+      }, q.type === 'open' || q.type === 'calc' ? '✔ Svolto' : '✔ Conferma')));
     }
     if (ctx.explain && Q.stripHtml(q.explanation).trim()) {
       root.append(h('div', { class: 'qw-expl' }, h('div', { class: 'qw-expl-label' }, '📖 Spiegazione'), h('div', { class: 'qw-expl-text rich', html: Q.richHtml(q.explanation) })));
@@ -140,77 +134,17 @@
   };
 
   const RENDER = {
-    /* Esercizio di calcolo: passaggi da completare alla LIM, oppure solo testo da svolgere alla lavagna */
-    calc(body, q, view, c, locked) {
+    /* Esercizio di calcolo: sulla LIM solo il testo (si svolge alla lavagna); la soluzione compare con la correzione */
+    calc(body, q, view, c) {
+      if (!c.reveal) return;
       const steps = q.steps || [];
-      const ui = c.ui;
-      if (q.board) {
-        if (c.reveal) {
-          body.append(h('div', { class: 'calc-solution' }, h('div', { class: 'ma-label' }, 'Soluzione'),
-            h('ol', null, steps.map((x, i) => {
-              const mark = c.stepMarks ? c.stepMarks[i] : null;
-              return h('li', { class: mark == null ? '' : mark ? 'ok' : 'ko' },
-                h('span', { class: 'cs-label' }, x.label), h('span', { class: 'cs-val' }, ' = ' + x.value + (x.unit ? ' ' + x.unit : '')));
-            }))));
-        } else {
-          body.append(h('div', { class: 'calc-steps-list' }, h('div', { class: 'ma-label' }, `Passaggi richiesti (${steps.length})`),
-            h('ol', null, steps.map((x) => h('li', null, x.label)))));
-          if (q.grid !== false) body.append(h('div', { class: 'calc-grid' }));
-        }
-        return;
-      }
-      const src = Array.isArray(c.answer) ? c.answer : [];
-      const vals = steps.map((_, i) => src[i] || '');
-      const ev = c.reveal ? Q.evaluate(q, vals) : null;
-      if (ui.active == null || ui.active >= steps.length) ui.active = 0;
-      const table = h('div', { class: 'calc-steps' });
-      steps.forEach((x, i) => {
-        const state = ev ? ((c.stepMarks ? c.stepMarks[i] : ev.per[i]) ? ' ok' : ' ko') : '';
-        const inp = h('input', {
-          type: 'text', class: 'calc-in' + state + (!locked && ui.active === i ? ' active' : ''), value: vals[i],
-          inputmode: 'none', autocomplete: 'off', spellcheck: 'false', readonly: locked, 'data-step': i, placeholder: '…',
-          onfocus: () => { if (!locked && ui.active !== i) { ui.active = i; table.querySelectorAll('.calc-in').forEach((el, k) => el.classList.toggle('active', k === i)); } },
-          oninput: (e) => { vals[i] = e.target.value; c.onChange && c.onChange(vals.slice(), true); },
-          onkeydown: (e) => {
-            if (e.key !== 'Enter') return;
-            e.preventDefault();
-            if (i < steps.length - 1) { ui.active = i + 1; const nx = table.querySelector(`[data-step="${i + 1}"]`); if (nx) nx.focus(); }
-            else { const b = table.closest('.qw') && table.closest('.qw').querySelector('.confirm-btn'); if (b) b.click(); }
-          },
-        });
-        table.append(h('div', { class: 'calc-row' + state },
-          h('span', { class: 'calc-n' }, i + 1),
-          h('span', { class: 'calc-label' }, x.label),
-          h('span', { class: 'calc-eq' }, '='),
-          inp,
-          h('span', { class: 'calc-unit' }, x.unit || ''),
-          ev && !(c.stepMarks ? c.stepMarks[i] : ev.per[i]) ? h('span', { class: 'fix' }, x.value + (x.unit ? ' ' + x.unit : '')) : h('span')));
-      });
-      const wrap = h('div', { class: 'calc-wrap' }, table);
-      body.append(wrap);
-      ui.collect = () => {
-        const out = vals.slice();
-        table.querySelectorAll('.calc-in').forEach((el) => { out[+el.dataset.step] = el.value; });
-        return out;
-      };
-      if (locked) return;
-      // tastierino numerico per la LIM (si può usare anche la tastiera)
-      const press = (k) => {
-        const i = ui.active || 0;
-        let v = String(vals[i] || '');
-        if (k === '⌫') v = v.slice(0, -1);
-        else if (k === '↵') { ui.active = Math.min(steps.length - 1, i + 1); c.rerender(); return; }
-        else v += k;
-        vals[i] = v;
-        c.onChange && c.onChange(vals.slice());
-      };
-      const keys = ['7', '8', '9', '⌫', '4', '5', '6', ',', '1', '2', '3', '.', '0', '↵'];
-      wrap.append(h('div', { class: 'keypad' }, keys.map((k) => h('button', {
-        type: 'button', class: 'key' + (k === '0' ? ' wide' : '') + (k === '↵' ? ' enter' : '') + (k === '⌫' ? ' back' : ''),
-        title: k === '↵' ? 'Passaggio successivo' : k === '⌫' ? 'Cancella' : '',
-        onmousedown: (e) => e.preventDefault(),
-        onclick: () => press(k),
-      }, k === '↵' ? 'Avanti ↵' : k))));
+      body.append(h('div', { class: 'calc-solution' }, h('div', { class: 'ma-label' }, 'Soluzione'),
+        h('ol', null, steps.map((x, i) => {
+          const mark = c.stepMarks ? c.stepMarks[i] : null;
+          return h('li', { class: mark == null ? '' : mark ? 'ok' : 'ko' },
+            h('span', { class: 'cs-label' }, x.label),
+            x.value ? h('span', { class: 'cs-val' }, ' = ' + x.value + (x.unit ? ' ' + x.unit : '')) : null);
+        }))));
     },
 
     multiple(body, q, view, c, locked) {

@@ -154,47 +154,10 @@
 .tf-why { margin-top: .35em; padding-top: .4em; border-top: .06em solid rgba(22, 101, 52, .25); color: #14532d; font-size: .9em; font-weight: 500; }
 .qw input.blank-in { width: auto; display: inline-block; padding: .05em .3em; }
 
-/* Esercizio di calcolo */
-.calc-steps { display: flex; flex-direction: column; gap: .45em; }
-.calc-row { display: grid; grid-template-columns: 1.7em minmax(0, 1fr) auto minmax(6em, 9em) minmax(2.5em, auto) auto; align-items: center; gap: .5em; }
-.calc-n { width: 1.6em; height: 1.6em; border-radius: 50%; display: grid; place-items: center; background: #e2e8f0; font-weight: 800; font-size: .85em; }
-.calc-label { font-weight: 600; }
-.calc-eq { color: var(--muted); font-weight: 700; }
-.qw input.calc-in {
-  width: 100%; font: inherit; font-weight: 700; text-align: right; padding: .25em .5em; color: inherit;
-  border: .12em solid var(--line); border-radius: .4em; background: #fff; outline: none;
-  font-variant-numeric: tabular-nums;
-}
-.qw input.calc-in.active { border-color: var(--sel); background: var(--sel-bg); box-shadow: 0 0 0 .15em rgba(37, 99, 235, .15); }
-.qw input.calc-in.ok { border-color: var(--ok); background: var(--ok-bg); color: var(--ok-ink); }
-.qw input.calc-in.ko { border-color: var(--ko); background: var(--ko-bg); color: var(--ko-ink); text-decoration: line-through; }
-.calc-unit { color: var(--muted); font-weight: 600; }
-.keypad { display: grid; grid-template-columns: repeat(4, 3.2em); gap: .35em; justify-content: center; margin-top: .9em; }
-.key { height: 2.4em; border: .1em solid var(--line); border-radius: .45em; background: #fff; font-weight: 800; font-size: 1em; cursor: pointer; }
-.key:active { transform: scale(.94); background: var(--sel-bg); }
-.key.wide { grid-column: span 2; }
-.key.enter { grid-column: span 2; background: var(--sel-bg); color: var(--sel); border-color: #bfdbfe; font-size: .85em; }
-.key.back { color: var(--ko); }
-.calc-steps-list ol, .calc-solution ol { margin: .2em 0 0; padding-left: 1.4em; }
+/* Esercizio di calcolo: soluzione mostrata con la correzione */
 .calc-steps-list li, .calc-solution li { margin: .2em 0; }
 .calc-solution { padding: .7em 1em; border-left: .3em solid var(--ok); background: #f0fdf4; border-radius: .4em; }
 .calc-solution .cs-val { font-weight: 800; color: var(--ok-ink); font-variant-numeric: tabular-nums; }
 .calc-solution li.ok::marker { color: var(--ok); }
 .calc-solution li.ko .cs-label { text-decoration: line-through; color: var(--ko-ink); }
-.calc-grid {
-  margin-top: .8em; min-height: 12em; border: .06em solid #cbd5e1; border-radius: .3em;
-  background-color: #fff;
-  background-image: linear-gradient(#e2e8f0 .06em, transparent .06em), linear-gradient(90deg, #e2e8f0 .06em, transparent .06em);
-  background-size: 1.6em 1.6em;
-}
-
-/* Passaggi e tastierino affiancati */
-.calc-wrap { display: flex; gap: 1.4em; align-items: flex-start; flex-wrap: wrap; }
-.calc-wrap .calc-steps { flex: 1 1 26em; max-width: 46em; }
-.calc-wrap .keypad { margin-top: 0; flex: none; }
-.calc-row { grid-template-columns: 1.7em auto auto minmax(6em, 9em) minmax(2.5em, auto) auto; }
-.calc-label { min-width: 0; }
-/* colonne allineate tra i passaggi */
-.calc-steps { display: grid; grid-template-columns: 1.7em minmax(0, auto) auto minmax(6em, 9em) minmax(2.5em, auto) auto; gap: .45em .5em; align-items: center; }
-.calc-row { display: contents; }
-.calc-steps { grid-template-columns: 1.7em minmax(8em, max-content) auto minmax(6em, 9em) minmax(2.5em, max-content) minmax(0, max-content); }
+.calc-solution ol { margin: .2em 0 0; padding-left: 1.4em; }

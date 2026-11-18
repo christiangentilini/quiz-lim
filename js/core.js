@@ -162,7 +162,7 @@ window.Q = window.Q || {};
       case 'cloze': return { ...base, bank: true, distractors: '' };
       case 'dropdown': return { ...base };
       case 'match': return { ...base, pairs: [{ left: '', right: '' }, { left: '', right: '' }, { left: '', right: '' }] };
-      case 'calc': return { ...base, board: false, grid: true, stepPoints: 1, tolerance: 0.5, steps: [{ label: '', value: '', unit: '' }, { label: '', value: '', unit: '' }, { label: '', value: '', unit: '' }] };
+      case 'calc': return { ...base, board: true, stepPoints: 1, steps: [{ label: '', value: '', unit: '' }, { label: '', value: '', unit: '' }, { label: '', value: '', unit: '' }] };
     }
     return base;
   };
@@ -203,8 +203,7 @@ window.Q = window.Q || {};
         break;
       }
       case 'calc':
-        if (!(q.steps || []).some((x) => String(x.label || '').trim())) w.push('Aggiungi almeno un passaggio');
-        else if (!q.board && (q.steps || []).some((x) => String(x.label || '').trim() && Q.parseNum(x.value) == null)) w.push('Ogni passaggio richiede un risultato numerico');
+        if (!(q.steps || []).some((x) => String(x.label || '').trim())) w.push('Aggiungi almeno un passaggio della soluzione');
         break;
       case 'match':
         if ((q.pairs || []).filter((p) => String(p.left || '').trim() && String(p.right || '').trim()).length < 2) w.push('Servono almeno 2 coppie complete');

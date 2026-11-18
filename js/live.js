@@ -287,7 +287,7 @@ Q.Live = (function () {
       r.rev = (r.rev || 0) + 1;
       r.from = from || sync.id;
     }
-    if (curQ().type === 'open' || (curQ().type === 'calc' && curQ().board)) {
+    if (curQ().type === 'open' || curQ().type === 'calc') {
       // aperta (o calcolo alla lavagna): «Risposto» ferma il timer; la risposta attesa compare solo dopo l'esito del docente
       Object.assign(r, { confirmed: true, status: 'pending', fraction: 0, points: 0 });
       stopTimer();
@@ -329,8 +329,7 @@ Q.Live = (function () {
     const n = marks.filter(Boolean).length;
     if (n === steps.length && steps.length) r.status = 'correct';
     else if (n > 0) r.status = 'wrong';
-    else if (q.board) r.status = r.stepsSet ? 'wrong' : 'pending';
-    else r.status = autoStatus === 'blank' ? 'blank' : 'wrong';
+    else r.status = r.stepsSet ? 'wrong' : autoStatus === 'blank' ? 'blank' : 'pending';
     r.fraction = steps.length ? n / steps.length : 0;
     const sc = s.settings.scoring;
     r.points = !sc || !sc.enabled || r.status === 'pending' ? 0 : r.status === 'blank' ? (Number(sc.blank) || 0) : Q.round2(n * (q.stepPoints ?? 1));
@@ -969,9 +968,7 @@ Q.Live = (function () {
       if (scoring) left.append(h('span', { class: 'chip' }, `${Q.fmtNum(r.points || 0)} pt`));
       left.append(h('button', { class: 'btn ghost', title: 'Sblocca la risposta, annulla l’esito e fa ripartire il timer', onclick: reopenAnswer }, '↺ Riapri'));
       if (!r.revealed) {
-        right.append(prevBtn, q.board || r.confirmed
-          ? h('button', { class: 'btn success big main-action', onclick: reveal }, '✔ Mostra correzione (Invio)')
-          : h('button', { class: 'btn success big main-action', onclick: () => confirmAnswer() }, '✔ Conferma e correggi (Invio)'));
+        right.append(prevBtn, h('button', { class: 'btn success big main-action', onclick: reveal }, '✔ Mostra correzione (Invio)'));
       } else {
         right.append(prevBtn, h('button', { class: 'btn primary big main-action', onclick: next }, s.idx >= s.order.length - 1 ? 'Concludi quiz 🏁 (Invio)' : 'Successiva → (Invio)'));
       }

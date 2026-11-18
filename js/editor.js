@@ -123,13 +123,13 @@ Q.Editor = (function () {
       mk('match', { text: 'Collega ogni stato alla sua capitale.', pairs: [
         { left: 'Francia', right: 'Parigi' }, { left: 'Spagna', right: 'Madrid' }, { left: 'Germania', right: 'Berlino' }, { left: 'Portogallo', right: 'Lisbona' }] }),
       mk('open', { text: 'Perché le foglie in autunno cambiano colore?', answer: 'Diminuisce la clorofilla e diventano visibili altri pigmenti (carotenoidi, antociani).' }),
-      mk('calc', { text: '<b>Intervista per un podcast</b> — 44.100 Hz · 16 bit · mono · 5 min<br>Calcola il peso del file audio non compresso in MB (1 byte = 8 bit, 1 MB = 1.000.000 byte).', board: false, stepPoints: 1, tolerance: 0.5, steps: [
+      mk('calc', { text: '<b>Intervista per un podcast</b> — 44.100 Hz · 16 bit · mono · 5 min<br>Calcola il peso del file audio non compresso in MB (1 byte = 8 bit, 1 MB = 1.000.000 byte).', board: true, stepPoints: 1, steps: [
         { label: 'Campioni (44.100 × 300 s)', value: '13.230.000', unit: 'campioni' },
         { label: 'Bit (campioni × 16 × 1 canale)', value: '211.680.000', unit: 'bit' },
         { label: 'Byte (bit ÷ 8)', value: '26.460.000', unit: 'byte' },
         { label: 'Megabyte (byte ÷ 1.000.000)', value: '26,46', unit: 'MB' }],
         explanation: 'Peso = frequenza × bit × canali × secondi ÷ 8 ÷ 1.000.000' }),
-      mk('calc', { text: '<b>Brano musicale</b> — 48.000 Hz · 24 bit · stereo · 3 min<br>Calcola il peso del file in MB mostrando tutti i passaggi alla lavagna.', board: true, grid: true, stepPoints: 1, steps: [
+      mk('calc', { text: '<b>Brano musicale</b> — 48.000 Hz · 24 bit · stereo · 3 min<br>Calcola il peso del file in MB mostrando tutti i passaggi.', board: true, stepPoints: 1, steps: [
         { label: 'Campioni per canale (48.000 × 180 s)', value: '8.640.000', unit: 'campioni' },
         { label: 'Bit (campioni × 24 × 2 canali)', value: '414.720.000', unit: 'bit' },
         { label: 'Byte (bit ÷ 8)', value: '51.840.000', unit: 'byte' },
@@ -410,13 +410,7 @@ Q.Editor = (function () {
     },
 
     calc(f, q, changed) {
-      const mode = (val, label, hint) => h('label', { class: 'mode-opt' + (!!q.board === val ? ' on' : '') },
-        h('input', { type: 'radio', name: 'calc-' + q.id, checked: !!q.board === val, onchange: () => { q.board = val; changed(true); } }),
-        h('strong', null, label), h('span', { class: 'small muted' }, hint));
-      f.append(h('div', { class: 'field' }, h('span', { class: 'flabel' }, 'Come si svolge'),
-        h('div', { class: 'mode-opts' },
-          mode(false, '🖐 Alla LIM', 'Lo studente scrive il risultato di ogni passaggio (con il tastierino); correzione automatica.'),
-          mode(true, '✏️ Solo testo, alla lavagna', 'Sulla LIM compaiono testo e passaggi richiesti; lo svolgimento è alla lavagna e i passaggi li correggi tu.'))));
+      f.append(help('Sulla LIM compare solo il testo: l’esercizio si svolge alla lavagna. La soluzione qui sotto compare con la correzione, e in regia segni quali passaggi sono giusti.'));
       const box = h('div', { class: 'step-edit' });
       const draw = () => {
         Q.clear(box);
@@ -424,22 +418,17 @@ Q.Editor = (function () {
         q.steps.forEach((x, i) => {
           box.append(h('div', { class: 'step-row' },
             h('span', { class: 'letter' }, i + 1),
-            txt(x.label, 'Es. Numero di campioni (44.100 × 300 s)', (v) => { x.label = v; changed(); }),
-            txt(x.value, q.board ? 'facoltativo' : 'Es. 13.230.000', (v) => { x.value = v; changed(); }),
+            txt(x.label, 'Es. Campioni (44.100 × 300 s)', (v) => { x.label = v; changed(); }),
+            txt(x.value, 'Es. 13.230.000', (v) => { x.value = v; changed(); }),
             txt(x.unit, 'Es. campioni', (v) => { x.unit = v; changed(); }),
             q.steps.length > 1 ? iconBtn('✕', 'Rimuovi passaggio', () => { q.steps.splice(i, 1); draw(); changed(); }) : h('span')));
         });
         if (q.steps.length < 10) box.append(h('button', { class: 'btn small ghost', type: 'button', onclick: () => { q.steps.push({ label: '', value: '', unit: '' }); draw(); changed(); } }, '+ Passaggio'));
       };
       draw();
-      f.append(h('div', { class: 'field' }, h('span', { class: 'flabel' }, 'Passaggi richiesti'), box));
-      f.append(h('div', { class: 'row' },
-        h('label', { class: 'inline' }, 'Punti per passaggio ',
-          h('input', { type: 'number', class: 'w-num', min: 0, step: 0.25, value: q.stepPoints ?? 1, oninput: (e) => { const v = parseFloat(e.target.value); q.stepPoints = isNaN(v) ? 1 : v; changed(); } })),
-        !q.board ? h('label', { class: 'inline', title: 'Quanto può scostarsi il risultato (utile con gli arrotondamenti)' }, 'Tolleranza ',
-          h('input', { type: 'number', class: 'w-num', min: 0, step: 0.1, value: q.tolerance ?? 0.5, oninput: (e) => { const v = parseFloat(e.target.value); q.tolerance = isNaN(v) ? 0 : v; changed(); } }), ' %') : null,
-        q.board ? h('label', { class: 'chk' }, h('input', { type: 'checkbox', checked: q.grid !== false, onchange: (e) => { q.grid = e.target.checked; changed(); } }), 'Mostra i quadretti sulla LIM') : null));
-      f.append(help('I numeri si possono scrivere all’italiana: 13.230.000 oppure 26,46. Con «Punti per passaggio» ogni passaggio corretto vale quei punti (es. 4 passaggi × 1 punto).'));
+      f.append(h('div', { class: 'field' }, h('span', { class: 'flabel' }, 'Soluzione (passaggi)'), box));
+      f.append(h('label', { class: 'inline' }, 'Punti per passaggio ',
+        h('input', { type: 'number', class: 'w-num', min: 0, step: 0.25, value: q.stepPoints ?? 1, oninput: (e) => { const v = parseFloat(e.target.value); q.stepPoints = isNaN(v) ? 1 : v; changed(); } })));
     },
 
     match(f, q, changed) {

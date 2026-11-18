@@ -32,7 +32,7 @@ e vai su http://localhost:8765
 
 Scelta multipla (anche più risposte corrette) · Vero/falso · Aperta (valutazione manuale) ·
 Completamento `Il [[gatto]] dorme sul [[divano|sofà]]` · Tendina `[[corretta|errata|errata]]` · Collegamento ·
-**Esercizio di calcolo** con passaggi richiesti: alla LIM (risultato di ogni passaggio con tastierino, correzione automatica con tolleranza) oppure solo testo alla lavagna (con quadretti; i passaggi li segni tu). Punti per passaggio.
+**Esercizio di calcolo**: sulla LIM solo il testo, si svolge alla lavagna; alla correzione compare la soluzione passo passo e in regia segni i passaggi giusti (punti per passaggio).
 
 ## Scorciatoie in regia
 
